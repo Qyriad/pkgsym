@@ -104,7 +104,6 @@ def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> (list[
 
 def main():
 
-    home_dir = os.path.expanduser('~')
     parser = argparse.ArgumentParser()
     parser.add_argument('action', choices=['link', 'unlink'])
     parser.add_argument('package', action='store', type=str)
