@@ -21,7 +21,7 @@ class Operation:
         """ Creates a Python exception of type `error_cls` with errno `err_code` for a failure of this operation. """
         raise NotImplementedError("Operation.error() must be implemented in subclass.")
 
-    def check(self):
+    def check(self, unperform=False):
         """ Tries to check if this operation can be performed without error (not foolproof). Should raise self.error() if fails."""
         # We're trying to ask for permission rather than begging for forgiveness, but if we *can*, we'd rather
         # let the user know that their operation will fail *before* any changes are made to the disk.
@@ -33,10 +33,10 @@ class Operation:
         # let the user know that their operation will fail *before* any changes are made to the disk.
         raise NotImplementedError("Operation.check_unperform() must be implemented in subclass.")
 
-    def log(self):
+    def log(self, unperform=False):
         raise NotImplementedError("Operation.log() must be implemented in subclasses.")
 
-    def perform(self):
+    def perform(self, unperform=False):
         raise NotImplementedError("Operation.perform() must be implemented in subclasses.")
 
     def log_unperform(self):
@@ -57,7 +57,10 @@ class CreateDirectory(Operation):
         e.filename = self.target
         return e
 
-    def check(self):
+    def check(self, unperform=False):
+        if unperform:
+            return self.check_unperform()
+
         if os.path.exists(self.target):
             raise self.error(FileExistsError, errno.EEXIST)
 
@@ -67,10 +70,16 @@ class CreateDirectory(Operation):
         # We'll beg for forgiveness in that case.
         pass
 
-    def log(self):
+    def log(self, unperform=False):
+        if unperform:
+            return self.log_unperform()
+
         print(f"created directory '{self.target}'")
 
-    def perform(self):
+    def perform(self, unperform=False):
+        if unperform:
+            return self.unperform()
+
         os.mkdir(self.target)
         self.log()
 
@@ -98,7 +107,10 @@ class Symlink(Operation):
         e.filename2 = self.target
         return e
 
-    def check(self):
+    def check(self, unperform=False):
+        if unperform:
+            return self.check_unperform()
+
         if os.path.exists(self.link):
             raise self.error(FileExistsError, errno.EEXIST)
         if not os.path.exists(self.target):
@@ -108,10 +120,16 @@ class Symlink(Operation):
         if not os.path.exists(self.link):
             raise self.error(FileNotFoundError, errno.ENOENT)
 
-    def log(self):
+    def log(self, unperform=False):
+        if unperform:
+            return self.log_unperform()
+
         print(f"'{self.link}' -> '{self.target}'")
 
-    def perform(self):
+    def perform(self, unperform=False):
+        if unperform:
+            return self.unperform()
+
         os.symlink(self.target, self.link)
         self.log()
 
@@ -214,58 +232,38 @@ def main():
         symlink_operations.extend(symops)
         directory_operations.extend(dirops)
 
-
     if args.action == 'link':
-
         operations = list(itertools.chain(directory_operations, symlink_operations))
+        unperform = False
+    elif args.action == 'unlink':
+        # The order is reversed from above because we have to start at the deepest part
+        # of the tree when removing directories.
+        operations = list(itertools.chain(symlink_operations, directory_operations))
+        unperform = True
+    else:
+        raise ValueError("Unreachable")
 
-        if not args.ignore_errors:
-            for operation in operations:
-                try:
-                    operation.check()
-                except OSError as e:
-                    traceback.print_exception(e)
-                    print("Note: the above error occurred as a check. No disk operations have been performed.")
-                    return e.errno
+    if not args.ignore_errors:
+
+        for operation in operations:
+            try:
+                operation.check(unperform)
+            except OSError as e:
+                traceback.print_exception(e)
+                print("Note: the above error occurred as a check. No disk operations have been performed.")
+                return e.errno
 
         for operation in operations:
             if args.dry_run:
-                operation.log()
+                operation.log(unperform)
             else:
                 try:
-                    operation.perform()
+                    operation.perform(unperform)
                 except OSError as e:
                     if args.ignore_errors:
                         print(f"Ignoring error {e}")
                     else:
                         raise e
-
-    elif args.action == 'unlink':
-
-        # The order is reversed from above because we have to start at the deepest part
-        # of the tree when removing directories.
-        operations = list(itertools.chain(symlink_operations, directory_operations))
-
-        if not args.ignore_errors:
-            for operation in operations:
-                try:
-                    operation.check_unperform()
-                except OSError as e:
-                    traceback.print_exception(e)
-                    print("Note: the above error occurred as a check. No disk operations have been performed.")
-                    return e.errno
-
-        for operation in operations:
-            if args.dry_run:
-                operation.log_unperform()
-            else:
-                try:
-                    operation.unperform()
-                except OSError as e:
-                    if args.ignore_errors:
-                        print(f"Ignoring error {e}")
-                    else:
-                        raise
 
 
 if __name__ == '__main__':
