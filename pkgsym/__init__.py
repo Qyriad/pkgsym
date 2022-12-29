@@ -75,6 +75,7 @@ class Symlink(Operation):
 
 
 def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> Tuple[List[Symlink], List[CreateDirectory]]:
+    """ Recursively generate the symlink and mkdir operations necessary to create link_target's directory tree. """
 
     symlink_operations = []
     directory_operations = []
@@ -87,6 +88,11 @@ def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> Tuple[
         symlink_operations.append(Symlink(target=full_target_path, link=full_link_path))
 
     elif link_target.is_dir():
+
+        # If it's a directory (which is the case for the first call of this function, e.g.
+        # generate_symlink_operations("/home/user/.local", "/home/user/.local/opt/neovim"))
+        # then we need to create all descendent directories and symlink all children files of
+        # those direrctories.
 
         full_subdir_path = os.path.join(install_dir, link_target.name)
         if not os.path.exists(full_subdir_path):
@@ -117,6 +123,14 @@ def main():
     )
     parser.add_argument('--prefix', type=str, default=DEFAULT_PREFIX,
         help="Directory to use as a prefix for package managemnt",
+    )
+    parser.add_argument('--system', action='store_const', const='/usr/local', dest='prefix',
+        default=argparse.SUPPRESS,
+        help='Shortcut for --prefix /usr/local',
+    )
+    parser.add_argument('--user', action='store_const', const=DEFAULT_PREFIX, dest='prefix',
+        default=argparse.SUPPRESS,
+        help='Shortcut for --prefix ~/.local (default)',
     )
     parser.add_argument('--opt', type=str, default=DEFAULT_OPT, metavar='OPT_DIR',
         help="Directory under prefix that contains self-contained installs",
