@@ -1,7 +1,9 @@
 import os
 import os.path
 import argparse
+import itertools
 from dataclasses import dataclass
+from typing import Tuple, List
 
 
 HOME_DIR = os.path.expanduser('~')
@@ -72,7 +74,7 @@ class Symlink(Operation):
 
 
 
-def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> (list[Symlink], list[CreateDirectory]):
+def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> Tuple[List[Symlink], List[CreateDirectory]]:
 
     symlink_operations = []
     directory_operations = []
@@ -119,6 +121,9 @@ def main():
     parser.add_argument('--opt', type=str, default=DEFAULT_OPT, metavar='OPT_DIR',
         help="Directory under prefix that contains self-contained installs",
     )
+    parser.add_argument('-n', '--dry-run', action='store_true',
+        help="Print operations without executing",
+    )
 
     args = parser.parse_args()
 
@@ -145,20 +150,21 @@ def main():
 
     if args.action == 'link':
 
-        for dirop in directory_operations:
-            dirop.perform()
-
-        for symop in symlink_operations:
-            symop.perform()
+        for operation in itertools.chain(directory_operations, symlink_operations):
+            if args.dry_run:
+                operation.log()
+            else:
+                operation.perform()
 
     elif args.action == 'unlink':
 
-        for symop in symlink_operations:
-            symop.unperform()
-
-        # Reversed because we have to start at the deepest part of the tree when removing directories.
-        for dirop in reversed(directory_operations):
-            dirop.unperform()
+        # The order is reversed from above because we have to start at the deepest part
+        # of the tree when removing directories.
+        for operation in itertools.chain(symlink_operations, directory_operations):
+            if args.dry_run:
+                operation.log_unperform()
+            else:
+                operation.unperform()
 
 
 if __name__ == '__main__':
