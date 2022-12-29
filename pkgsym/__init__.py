@@ -4,6 +4,11 @@ import argparse
 from dataclasses import dataclass
 
 
+HOME_DIR = os.path.expanduser('~')
+DEFAULT_PREFIX = os.path.join(HOME_DIR, '.local')
+DEFAULT_OPT = "opt"
+
+
 @dataclass
 class Operation:
 
@@ -66,9 +71,6 @@ class Symlink(Operation):
         self.log_unperform()
 
 
-HOME_DIR = os.path.expanduser('~')
-DEFAULT_PREFIX = os.path.join(HOME_DIR, '.local')
-
 
 def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> (list[Symlink], list[CreateDirectory]):
 
@@ -104,10 +106,19 @@ def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> (list[
 
 def main():
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=['link', 'unlink'])
-    parser.add_argument('package', action='store', type=str)
-    parser.add_argument('--prefix', type=str, default=DEFAULT_PREFIX)
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('action', choices=['link', 'unlink'],
+        help="Link or unlink a package under the self-contained directory to the prefix",
+    )
+    parser.add_argument('package', action='store', type=str,
+        help="The package name to link or unlink -- should be the directory under $prefix/opt that contains the package",
+    )
+    parser.add_argument('--prefix', type=str, default=DEFAULT_PREFIX,
+        help="Directory to use as a prefix for package managemnt",
+    )
+    parser.add_argument('--opt', type=str, default=DEFAULT_OPT, metavar='OPT_DIR',
+        help="Directory under prefix that contains self-contained installs",
+    )
 
     args = parser.parse_args()
 
