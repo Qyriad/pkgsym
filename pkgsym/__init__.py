@@ -253,17 +253,17 @@ def main():
                 print("Note: the above error occurred as a check. No disk operations have been performed.")
                 return e.errno
 
-        for operation in operations:
-            if args.dry_run:
-                operation.log(unperform)
-            else:
-                try:
-                    operation.perform(unperform)
-                except OSError as e:
-                    if args.ignore_errors:
-                        print(f"Ignoring error {e}")
-                    else:
-                        raise e
+    for operation in operations:
+        if args.dry_run:
+            operation.log(unperform)
+        else:
+            try:
+                operation.perform(unperform)
+            except OSError as e:
+                if args.ignore_errors:
+                    print(f"Ignoring error {e}")
+                else:
+                    raise e
 
 
 if __name__ == '__main__':
