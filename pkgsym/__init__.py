@@ -8,6 +8,8 @@ import traceback
 from dataclasses import dataclass
 from typing import Tuple, List
 
+VERSION = "0.2.3"
+
 
 HOME_DIR = os.path.expanduser('~')
 DEFAULT_PREFIX = os.path.join(HOME_DIR, '.local')
@@ -182,7 +184,8 @@ def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> Tuple[
 
 def main():
 
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(prog='pkgsym', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--version', action='version', version=f'%(prog)s {VERSION}')
     parser.add_argument('action', choices=['link', 'unlink'],
         help="Link or unlink a package under the self-contained directory to the prefix",
     )
