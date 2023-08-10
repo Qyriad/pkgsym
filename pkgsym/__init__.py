@@ -8,7 +8,7 @@ import traceback
 from dataclasses import dataclass
 from typing import Tuple, List
 
-VERSION = "0.2.3"
+__version__ = "0.2.4"
 
 
 HOME_DIR = os.path.expanduser('~')
