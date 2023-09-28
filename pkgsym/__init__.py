@@ -185,7 +185,7 @@ def generate_symlink_operations(install_dir, link_target: os.DirEntry) -> Tuple[
 def main():
 
     parser = argparse.ArgumentParser(prog='pkgsym', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--version', action='version', version=f'%(prog)s {VERSION}')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     parser.add_argument('action', choices=['link', 'unlink'],
         help="Link or unlink a package under the self-contained directory to the prefix",
     )
@@ -215,7 +215,7 @@ def main():
 
     args = parser.parse_args()
 
-    pkgdir = os.path.join(args.prefix, 'opt', args.package)
+    pkgdir = os.path.join(args.prefix, args.opt, args.package)
 
     if not os.path.isdir(pkgdir):
         parser.error(f"{pkgdir} must be an installed package directory")
