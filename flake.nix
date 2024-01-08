@@ -9,29 +9,8 @@
         pkgs = import nixpkgs { inherit system; };
         inherit (builtins) attrValues;
 
-        pkgsym = pkgs.python3Packages.buildPythonApplication {
-          pname = "pkgsym";
-          version = "0.2.4";
-          format = "pyproject";
-          src = ./.;
+        pkgsym = pkgs.callPackage ./package.nix { };
 
-          meta = {
-            description = "Poor man's package manager, symlink edition";
-            homepage = "https://github.com/Qyriad/pkgsym";
-            license = pkgs.lib.licenses.mit;
-
-            # In theory, this works anywhere Python does.
-            platforms = pkgs.python3.meta.platforms;
-          };
-
-          nativeBuildInputs = attrValues {
-            inherit (pkgs.python3Packages)
-              setuptools
-              wheel
-            ;
-          };
-
-        }; # buildPythonApplication
       in {
         packages.default = pkgsym;
 
